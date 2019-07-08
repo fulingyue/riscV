@@ -6,6 +6,7 @@
 #define RISC_V_SIMULATOR_H
 
 #include <string>
+#include <iostream>
 
 enum InstType{
   SLLI,SRLI,SRAI,ADD,SUB,SLL,SLT,SLTU,XOR,SRL,SRA,OR,AND,
@@ -14,6 +15,7 @@ enum InstType{
   BEQ,BNE,BLT,BGE,BLTU,BGEU,
   LUI,AUIPC,
   JAL,
+  NOP,
 };
 
 
@@ -33,15 +35,20 @@ private:
   int8_t memory[0x20000];
   int32_t reg[32] = {0};
   struct Buffer {
-    uint32_t inst;
-    int32_t imm;
-    int32_t rs1 = 0,rs2 = 0,rd = 0;//rd is index,rs1&rs2 are values
-    int32_t exeRes;
-    InstType type;
+    uint32_t inst = 0;
+    int32_t imm = 0;
+    int32_t rs1 = 32,rs2 = 32,rd = 0;//rd is index,rs1&rs2 are values
+    int32_t val1 = 0, val2 = 0;
+    int32_t exeRes = 0;
+    InstType type = NOP;
     Buffer() = default;
     Buffer(Buffer &o) = default;
-  } buffer[4];
-  int32_t pc = 0;
 
+
+  } buffer[5];
+  int32_t pc = 0;
+  bool stack[33] = {0};
+  bool ifjump = false;
+  void print(Buffer o);
 };
 #endif //RISC_V_SIMULATOR_H

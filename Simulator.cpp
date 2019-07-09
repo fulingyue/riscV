@@ -47,15 +47,15 @@ int Simulator::run() {
   buffer[3].type = NOP;
   buffer[2].type = NOP;
   buffer[1].type = NOP;
-  //int i = 0;
   while (true) {
-    // std::cout << "===========" << "  " << std::dec << i<< std::hex <<  std::endl;
     reg[0] = 0;
     if (buffer[3].inst == 0xc68223) {
       return ((unsigned int)reg[10]) % 256u;
     }
+
 //    std::cout << "pc:" << pc << std::endl;
-    Wb();
+    if(!ifmem)
+      Wb();
 //    std::cout << "wb:" ;
 //    print(buffer[3]);
 //    std::cout << "pc:" << pc << std::endl;
@@ -63,29 +63,22 @@ int Simulator::run() {
 //    std::cout << "mem:";
 //    print(buffer[3]);
 //    std::cout << "pc:" << pc << std::endl;
-    Exe();
+    if(!ifmem)
+      Exe();
 //    std::cout << "exe:";
 //    print(buffer[2]);
 //    std::cout << "pc:" << pc << std::endl;
-    Id();
+    if(!ifmem)
+      Id();
 //    std::cout << "id:";
 //    print(buffer[1]);
 //    std::cout << "pc:" << pc << std::endl;
-    If();
+    if(!ifmem)
+      If();
 //    std::cout << "if:";
 //    print(buffer[0]);
 //    std::cout << "pc:" << pc << std::endl;
-//    std:: cout << "reg10:" << reg[10] << std::endl;
 
-//    std:: cout << "reg10:" << reg[10] << std::endl;
-
-
-    //for(auto i = 0;i < 32;++i){
-    //if(reg[i]);
-    // std::cout << std::dec << reg[i]  << std::hex << '\t';
-    //}
-    // std::cout << std::endl;
-    //++i;
   }
 }
 void Simulator::If() {
@@ -103,11 +96,6 @@ void Simulator::If() {
     buffer[0].rs2 = 32;
     buffer[0].rd = 32;
   }
-//     std::cerr << std::hex <<  pc - 4 << std::endl;
-//    std::cerr << std::bitset<32>(buffer[0].inst) << std::endl;
-//  for(auto i = 0;i < 32;++i){
-//    // // std::cout << std::hex << reg[i] << std::endl;
-//  }
 
 }
 void Simulator::Id() {
@@ -516,11 +504,24 @@ void Simulator::Exe() {
 }
 void Simulator::Mem() {
   buffer[3] = buffer[2];
+  if(buffer[2].type == LB || buffer[2].type == LH ||
+  buffer[2].type == LW || buffer[2].type == LBU ||
+      buffer[2].type == LHU || buffer[2].type ==  SB ||
+      buffer[2].type == SH || buffer[2].type == SW){
+    cnt ++;
+    if(cnt % 3){
+      ifmem = true;
+      return;
+    }
+    else {
+      ifmem = false;
+    }
+  }
   switch (buffer[2].type){
   case NOP:
     break;
   case LB:
-    buffer[3].exeRes = *(int8_t *)(memory + buffer[2].exeRes);
+      buffer[3].exeRes = *(int8_t *)(memory + buffer[2].exeRes);
     break;
   case LH:
     buffer[3].exeRes = *(int16_t *)(memory + buffer[2].exeRes);
@@ -535,13 +536,13 @@ void Simulator::Mem() {
     buffer[3].exeRes = *(uint16_t *)(memory + buffer[2].exeRes);
     break;
   case SB:{
-    char tmp = buffer[2].val2;
-    memcpy(memory + buffer[2].exeRes, &tmp, 1);
+      char tmp = buffer[2].val2;
+      memcpy(memory + buffer[2].exeRes, &tmp, 1);
     break;
   }
   case SH:{
-    short tmp = buffer[2].val2;
-    memcpy(memory + buffer[2].exeRes, &tmp, 2);
+      short tmp = buffer[2].val2;
+      memcpy(memory + buffer[2].exeRes, &tmp, 2);
     break;
   }
   case SW:{
@@ -574,5 +575,6 @@ void Simulator::Wb() {
     reg[buffer[3].rd] = buffer[3].exeRes;
     stack[buffer[3].rd] = false;
   }
+  buffer[3].type = NOP;
 
 }

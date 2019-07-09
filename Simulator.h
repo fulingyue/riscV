@@ -50,5 +50,7 @@ private:
   bool stack[33] = {0};
   bool ifjump = false;
   void print(Buffer o);
+  int cnt = 0;
+  bool ifmem = false;
 };
 #endif //RISC_V_SIMULATOR_H

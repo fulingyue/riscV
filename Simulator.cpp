@@ -50,39 +50,42 @@ int Simulator::run() {
   buffer[3].type = NOP;
   buffer[2].type = NOP;
   buffer[1].type = NOP;
+  int cnt = 0;
   while (true) {
     reg[0] = 0;
     if (buffer[3].inst == 0xc68223) {
       return ((unsigned int)reg[10]) % 256u;
     }
-
-    //    for (int i = 0;i < 32;i++)
-    //      std::cout <<  reg[i] << '\t';
-
-    //    std::cout << "pc:" << pc << std::endl;
-//    if (!ifmem)
+//    std::cout << cnt++ << std::endl;
+//        for (int i = 0;i < 32;i++)
+//          std::cout <<  reg[i] << '\t';
+//    std::cout << std::endl;
+//    if(cnt == 40000)
+//      assert(false);
+//        std::cout << "pc:" << pc << std::endl;
+    if (!ifmem)
       Wb();
-    //    std::cout << "wb:" ;
-    //    print(buffer[3]);
-    //    std::cout << "pc:" << pc << std::endl;
+//        std::cout << "wb:" ;
+//        print(buffer[3]);
+//        std::cout << "pc:" << pc << std::endl;
     Mem();
-    //    std::cout << "mem:";
-    //    print(buffer[3]);
-    //    std::cout << "pc:" << pc << std::endl;
-//    if (!ifmem)
+//        std::cout << "mem:";
+//        print(buffer[3]);
+//        std::cout << "pc:" << pc << std::endl;
+    if (!ifmem)
       Exe();
-    //    std::cout << "exe:";
-    //    print(buffer[2]);
-    //    std::cout << "pc:" << pc << std::endl;
-//    if (!ifmem)
+//        std::cout << "exe:";
+//        print(buffer[2]);
+//        std::cout << "pc:" << pc << std::endl;
+    if (!ifmem)
       Id();
-    //    std::cout << "id:";
-    //    print(buffer[1]);
-    //    std::cout << "pc:" << pc << std::endl;
-//    if (!ifmem)
+//        std::cout << "id:";
+//        print(buffer[1]);
+//        std::cout << "pc:" << pc << std::endl;
+    if (!ifmem)
       If();
-    //    std::cout << "if:";
-    //    print(buffer[0]);
+//        std::cout << "if:";
+//        print(buffer[0]);
   }
 }
 void Simulator::If() {
@@ -90,14 +93,14 @@ void Simulator::If() {
   //  assert(buffer[0].inst);
   buffer[0].inst = *(std::uint32_t *)(memory + pc);
   buffer[0].line = pc;
-  //  std::cout << "pc:" << pc << std::endl;
+//  std::cout << "pc:" << pc << std::endl;
   pc += 4;
 }
 void Simulator::Id() {
   buffer[1] = buffer[0];
   buffer[1].imm = 0;
-  buffer[1].rs1 = 32;
-  buffer[1].rs2 = 32;
+  buffer[1].rs1 = 0;
+  buffer[1].rs2 = 0;
   buffer[1].rd = 32;
   stack[32] = 0;
   if (buffer[0].inst == 0) {
@@ -324,17 +327,17 @@ void Simulator::Id() {
   if (stack[buffer[1].rs1] || stack[buffer[1].rs2]) {
     pc = buffer[1].line;
     buffer[1].type = NOP;
-    if (ifjump)
+//    if (ifjump)
       ifjump = false;
   } else {
     if (buffer[1].rd)
       stack[buffer[1].rd]++;
   }
-//  if (ifjump) {
-//    int bit = getBits(pc, 3, 6);
-//    if (counter[bit].ifjump())
-//      pc = counter[bit].jump;
-//  }
+  if (ifjump) {
+    int bit = getBits(pc, 3, 6);
+    if (counter[bit].ifjump())
+      pc = counter[bit].jump;
+  }
   ifjump = false;
 
   //    std::cout << str[buffer[1].type] << std::endl;
@@ -420,8 +423,7 @@ void Simulator::Exe() {
     if (tmp == buffer[0].line) {
       counter[getBits(buffer[1].line, 3, 6)].update(1);
     } else {
-      buffer[0].type = NOP;
-      buffer[0].inst = 0;
+      cleanBuffer(0);
       pc = buffer[1].imm + buffer[1].line;
       counter[getBits(buffer[1].line, 3, 6)].update(1);
       counter[getBits(buffer[1].line, 3, 6)].jump = tmp;
@@ -437,8 +439,7 @@ void Simulator::Exe() {
     if (tmp == buffer[0].line) {
       counter[getBits(buffer[1].line, 3, 6)].update(1);
     } else {
-      buffer[0].type = NOP;
-      buffer[0].inst = 0;
+      cleanBuffer(0);
       pc = tmp;
       counter[getBits(buffer[1].line, 3, 6)].update(1);
       counter[getBits(buffer[1].line, 3, 6)].jump = tmp;
@@ -497,8 +498,7 @@ void Simulator::Exe() {
       tmp = buffer[1].line + 4;
     }
     if (tmp != buffer[0].line) {
-      buffer[0].inst = 0;
-      buffer[0].type = NOP;
+      cleanBuffer(0);
       pc = tmp;
     }
     //    ifjump = false;
@@ -513,8 +513,7 @@ void Simulator::Exe() {
       tmp = buffer[1].line + 4;
     }
     if (tmp != buffer[0].line) {
-      buffer[0].inst = 0;
-      buffer[0].type = NOP;
+      cleanBuffer(0);
       pc = tmp;
     }
     //    ifjump = false;
@@ -529,8 +528,7 @@ void Simulator::Exe() {
       tmp = buffer[1].line + 4;
     }
     if (tmp != buffer[0].line) {
-      buffer[0].inst = 0;
-      buffer[0].type = NOP;
+      cleanBuffer(0);
       pc = tmp;
     }
     //    ifjump = false;
@@ -545,8 +543,7 @@ void Simulator::Exe() {
       tmp = buffer[1].line + 4;
     }
     if (tmp != buffer[0].line) {
-      buffer[0].inst = 0;
-      buffer[0].type = NOP;
+      cleanBuffer(0);
       pc = tmp;
     }
     //    ifjump = false;
@@ -561,13 +558,26 @@ void Simulator::Exe() {
       tmp = buffer[1].line + 4;
     }
     if (tmp != buffer[0].line) {
-      buffer[0].inst = 0;
-      buffer[0].type = NOP;
+      cleanBuffer(0);
       pc = tmp;
     }
     //    ifjump = false;
     break;
-
+  case BGEU:
+    if ((uint32_t)buffer[1].val1 >= (uint32_t)buffer[1].val2) {
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+      tmp = buffer[1].imm + buffer[1].line;
+      counter[getBits(buffer[1].line, 3, 6)].updateLine(tmp);
+    } else {
+      counter[getBits(buffer[1].line, 3, 6)].update(0);
+      tmp = buffer[1].line + 4;
+    }
+    if (tmp != buffer[0].line) {
+      cleanBuffer(0);
+      pc = tmp;
+    }
+    //    ifjump = false;
+    break;
   case AUIPC:
     buffer[2].exeRes = buffer[1].line + buffer[1].imm;
     break;
@@ -578,17 +588,17 @@ void Simulator::Exe() {
 }
 void Simulator::Mem() {
   buffer[3] = buffer[2];
-//  if (buffer[2].type == LB || buffer[2].type == LH || buffer[2].type == LW ||
-//      buffer[2].type == LBU || buffer[2].type == LHU || buffer[2].type == SB ||
-//      buffer[2].type == SH || buffer[2].type == SW) {
-//    cnt++;
-//    if (cnt % 3) {
-//      ifmem = true;
-//      return;
-//    } else {
-//      ifmem = false;
-//    }
-//  }
+  if (buffer[2].type == LB || buffer[2].type == LH || buffer[2].type == LW ||
+      buffer[2].type == LBU || buffer[2].type == LHU || buffer[2].type == SB ||
+      buffer[2].type == SH || buffer[2].type == SW) {
+    cnt++;
+    if (cnt % 3) {
+      ifmem = true;
+      return;
+    } else {
+      ifmem = false;
+    }
+  }
   switch (buffer[2].type) {
   case NOP:
     break;

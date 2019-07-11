@@ -25,11 +25,16 @@ public :
   Simulator(const std::string &inp);
   int run();
 private:
+  struct Buffer;
   void If();
   void Id();
   void Exe();
   void Mem();
   void Wb();
+
+  void cleanBuffer(std::size_t p) {
+    buffer[p] = Buffer();
+  }
 
 private:
   int8_t memory[0x20000];
@@ -41,7 +46,7 @@ private:
     int32_t val1 = 0, val2 = 0;
     int32_t exeRes = 0;
     InstType type = NOP;
-    int32_t line;
+    int32_t line = -1;
     Buffer() = default;
     Buffer(Buffer &o) = default;
   } buffer[5];

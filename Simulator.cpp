@@ -60,7 +60,7 @@ int Simulator::run() {
     //      std::cout <<  reg[i] << '\t';
 
     //    std::cout << "pc:" << pc << std::endl;
-    if (!ifmem)
+//    if (!ifmem)
       Wb();
     //    std::cout << "wb:" ;
     //    print(buffer[3]);
@@ -69,17 +69,17 @@ int Simulator::run() {
     //    std::cout << "mem:";
     //    print(buffer[3]);
     //    std::cout << "pc:" << pc << std::endl;
-    if (!ifmem)
+//    if (!ifmem)
       Exe();
     //    std::cout << "exe:";
     //    print(buffer[2]);
     //    std::cout << "pc:" << pc << std::endl;
-    if (!ifmem)
+//    if (!ifmem)
       Id();
     //    std::cout << "id:";
     //    print(buffer[1]);
     //    std::cout << "pc:" << pc << std::endl;
-    if (!ifmem)
+//    if (!ifmem)
       If();
     //    std::cout << "if:";
     //    print(buffer[0]);
@@ -328,13 +328,13 @@ void Simulator::Id() {
       ifjump = false;
   } else {
     if (buffer[1].rd)
-      stack[buffer[1].rd] = true;
+      stack[buffer[1].rd]++;
   }
-  if (ifjump) {
-    int bit = getBits(pc, 3, 6);
-    if (counter[bit].ifjump())
-      pc = counter[bit].jump;
-  }
+//  if (ifjump) {
+//    int bit = getBits(pc, 3, 6);
+//    if (counter[bit].ifjump())
+//      pc = counter[bit].jump;
+//  }
   ifjump = false;
 
   //    std::cout << str[buffer[1].type] << std::endl;
@@ -578,17 +578,17 @@ void Simulator::Exe() {
 }
 void Simulator::Mem() {
   buffer[3] = buffer[2];
-  if (buffer[2].type == LB || buffer[2].type == LH || buffer[2].type == LW ||
-      buffer[2].type == LBU || buffer[2].type == LHU || buffer[2].type == SB ||
-      buffer[2].type == SH || buffer[2].type == SW) {
-    cnt++;
-    if (cnt % 3) {
-      ifmem = true;
-      return;
-    } else {
-      ifmem = false;
-    }
-  }
+//  if (buffer[2].type == LB || buffer[2].type == LH || buffer[2].type == LW ||
+//      buffer[2].type == LBU || buffer[2].type == LHU || buffer[2].type == SB ||
+//      buffer[2].type == SH || buffer[2].type == SW) {
+//    cnt++;
+//    if (cnt % 3) {
+//      ifmem = true;
+//      return;
+//    } else {
+//      ifmem = false;
+//    }
+//  }
   switch (buffer[2].type) {
   case NOP:
     break;
@@ -644,7 +644,7 @@ void Simulator::Wb() {
   default:
     if (buffer[3].rd) {
       reg[buffer[3].rd] = buffer[3].exeRes;
-      stack[buffer[3].rd] = false;
+      stack[buffer[3].rd]--;
     }
   }
 }

@@ -71,7 +71,7 @@ private:
   } counter[16];
 
   int32_t pc = -4;
-  bool stack[33] = {0};
+  int stack[33] = {0};
   bool ifjump = false;
 
   void print(Buffer o);

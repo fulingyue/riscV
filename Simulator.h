@@ -41,14 +41,39 @@ private:
     int32_t val1 = 0, val2 = 0;
     int32_t exeRes = 0;
     InstType type = NOP;
+    int32_t line;
     Buffer() = default;
     Buffer(Buffer &o) = default;
-
-
   } buffer[5];
-  int32_t pc = 0;
+
+  struct Counter {
+    int cnt = 1;
+    int jump = 0;
+    bool ifjump() {
+      return cnt >= 2;
+    }
+    void update(bool jumped) {
+      if (jumped) {
+        cnt++;
+        if(cnt > 3)
+          cnt = 3;
+      }
+      else {
+        cnt --;
+        if (cnt < 0)
+          cnt = 0;
+      }
+    }
+    void updateLine(int linenum) {
+      if (cnt <= 2)
+        jump = linenum;
+    }
+  } counter[16];
+
+  int32_t pc = -4;
   bool stack[33] = {0};
   bool ifjump = false;
+
   void print(Buffer o);
   int cnt = 0;
   bool ifmem = false;

@@ -2,29 +2,32 @@
 // Created by 傅凌玥 on 2019/7/2.
 //
 #include "Simulator.h"
+#include <array>
+#include <bitset>
+#include <cassert>
+#include <cstring>
+#include <iostream>
 #include <sstream>
 #include <string>
-#include <iostream>
-#include <bitset>
-#include <cstring>
-#include <cassert>
-#include <array>
 
-void Simulator::print(Buffer o){
+void Simulator::print(Buffer o) {
   std::string str[] = {
-      "SLLI", "SRLI", "SRAI", "ADD", "SUB", "SLL", "SLT",  "SLTU", "XOR",   "SRL",   "SRA",   "OR",   "AND",
-      "JALR", "LB",   "LH",   "LW",  "LBU", "LHU", "ADDI", "SLTI", "SLTIU", "XORI",  "ORI",   "ANDI", "SB",
-      "SH",   "SW",   "BEQ",  "BNE", "BLT", "BGE", "BLTU", "BGEU", "LUI",   "AUIPC", "JAL",   "NOP",
+      "SLLI", "SRLI", "SRAI", "ADD",   "SUB",  "SLL",   "SLT",  "SLTU",
+      "XOR",  "SRL",  "SRA",  "OR",    "AND",  "JALR",  "LB",   "LH",
+      "LW",   "LBU",  "LHU",  "ADDI",  "SLTI", "SLTIU", "XORI", "ORI",
+      "ANDI", "SB",   "SH",   "SW",    "BEQ",  "BNE",   "BLT",  "BGE",
+      "BLTU", "BGEU", "LUI",  "AUIPC", "JAL",  "NOP",
   };
-  std::cout <<std::bitset<32>(o.inst) << std::endl;
-  std::cout << str[o.type] << "\timm:" << std::hex <<  o.imm << std::endl;
-  std::cout << "rs1:" << o.rs1 << "\trs2:" << o.rs2 << "\trd:" << o.rd << std::endl;
+  std::cout << std::bitset<32>(o.inst) << std::endl;
+  std::cout << str[o.type] << "\timm:" << std::hex << o.imm << std::endl;
+  std::cout << "rs1:" << o.rs1 << "\trs2:" << o.rs2 << "\trd:" << o.rd
+            << std::endl;
 };
 
 Simulator::Simulator(const std::string &inp) {
   int memoryPos;
   std::stringstream ss(inp);
-//  // // std::cout << ss.str() << std::endl;
+  //  // // std::cout << ss.str() << std::endl;
   while (!ss.eof()) {
     while (std::isspace(ss.peek()))
       ss.get();
@@ -42,7 +45,7 @@ namespace {
 std::uint32_t getBits(std::uint32_t x, std::size_t l, std::size_t r) {
   return (x >> l) & ((1 << (r - l + 1)) - 1);
 }
-}
+} // namespace
 int Simulator::run() {
   buffer[3].type = NOP;
   buffer[2].type = NOP;
@@ -53,50 +56,42 @@ int Simulator::run() {
       return ((unsigned int)reg[10]) % 256u;
     }
 
-//    std::cout << "pc:" << pc << std::endl;
-    if(!ifmem)
-      Wb();
-//    std::cout << "wb:" ;
-//    print(buffer[3]);
-//    std::cout << "pc:" << pc << std::endl;
-    Mem();
-//    std::cout << "mem:";
-//    print(buffer[3]);
-//    std::cout << "pc:" << pc << std::endl;
-    if(!ifmem)
-      Exe();
-//    std::cout << "exe:";
-//    print(buffer[2]);
-//    std::cout << "pc:" << pc << std::endl;
-    if(!ifmem)
-      Id();
-//    std::cout << "id:";
-//    print(buffer[1]);
-//    std::cout << "pc:" << pc << std::endl;
-    if(!ifmem)
-      If();
-//    std::cout << "if:";
-//    print(buffer[0]);
-//    std::cout << "pc:" << pc << std::endl;
+    //    for (int i = 0;i < 32;i++)
+    //      std::cout <<  reg[i] << '\t';
 
+    //    std::cout << "pc:" << pc << std::endl;
+    if (!ifmem)
+      Wb();
+    //    std::cout << "wb:" ;
+    //    print(buffer[3]);
+    //    std::cout << "pc:" << pc << std::endl;
+    Mem();
+    //    std::cout << "mem:";
+    //    print(buffer[3]);
+    //    std::cout << "pc:" << pc << std::endl;
+    if (!ifmem)
+      Exe();
+    //    std::cout << "exe:";
+    //    print(buffer[2]);
+    //    std::cout << "pc:" << pc << std::endl;
+    if (!ifmem)
+      Id();
+    //    std::cout << "id:";
+    //    print(buffer[1]);
+    //    std::cout << "pc:" << pc << std::endl;
+    if (!ifmem)
+      If();
+    //    std::cout << "if:";
+    //    print(buffer[0]);
   }
 }
 void Simulator::If() {
   buffer[0].inst = 0;
+  //  assert(buffer[0].inst);
   buffer[0].inst = *(std::uint32_t *)(memory + pc);
-//  assert(buffer[0].inst);
-  if( buffer[0].inst == 0)
-    assert(false);
-  if (!ifjump)
-    pc += 4;
-  else{
-    buffer[0].inst = 0;
-    buffer[0].type = NOP;
-    buffer[0].rs1 = 32;
-    buffer[0].rs2 = 32;
-    buffer[0].rd = 32;
-  }
-
+  buffer[0].line = pc;
+  //  std::cout << "pc:" << pc << std::endl;
+  pc += 4;
 }
 void Simulator::Id() {
   buffer[1] = buffer[0];
@@ -105,7 +100,7 @@ void Simulator::Id() {
   buffer[1].rs2 = 32;
   buffer[1].rd = 32;
   stack[32] = 0;
-  if(buffer[0].inst == 0){
+  if (buffer[0].inst == 0) {
     buffer[1].type = NOP;
     return;
   }
@@ -113,13 +108,13 @@ void Simulator::Id() {
   int func3, func7;
   switch (opcode) {
   case 51: // R
-    func7 = getBits(buffer[0].inst,25,31);
-    buffer[1].rs2 = getBits(buffer[0].inst, 20,24);
+    func7 = getBits(buffer[0].inst, 25, 31);
+    buffer[1].rs2 = getBits(buffer[0].inst, 20, 24);
     buffer[1].val2 = reg[buffer[1].rs2];
-    buffer[1].rs1 = getBits(buffer[0].inst,15,19);
+    buffer[1].rs1 = getBits(buffer[0].inst, 15, 19);
     buffer[1].val1 = reg[buffer[1].rs1];
-    func3 = getBits(buffer[0].inst,12,14);
-    buffer[1].rd = getBits(buffer[0].inst,7,11);
+    func3 = getBits(buffer[0].inst, 12, 14);
+    buffer[1].rd = getBits(buffer[0].inst, 7, 11);
     switch (func7) {
     case 0: // R
       switch (func3) {
@@ -158,8 +153,8 @@ void Simulator::Id() {
       }
     }
     break;
-  case 3://I
-    func3 = getBits(buffer[0].inst,12,14);
+  case 3: // I
+    func3 = getBits(buffer[0].inst, 12, 14);
     switch (func3) {
     case 0:
       buffer[1].type = LB;
@@ -186,23 +181,21 @@ void Simulator::Id() {
       buffer[1].imm = (1 << 21) - 1;
       buffer[1].imm <<= 12;
     }
-    buffer[1].imm += getBits(buffer[0].inst,20,31);
+    buffer[1].imm += getBits(buffer[0].inst, 20, 31);
     buffer[1].rs1 = getBits(buffer[0].inst, 15, 19);
     buffer[1].val1 = reg[buffer[1].rs1];
     buffer[1].rd = getBits(buffer[0].inst, 7, 11);
-//    // // std::cout << "immnow: " << std::hex <<  buffer[1].imm << std::endl;
-
     break;
   case 35: // S
-    buffer[1].rs2 = getBits(buffer[0].inst,20,24);
+    buffer[1].rs2 = getBits(buffer[0].inst, 20, 24);
     buffer[1].val2 = reg[buffer[1].rs2];
-    buffer[1].rs1 = getBits(buffer[0].inst,15,19);
+    buffer[1].rs1 = getBits(buffer[0].inst, 15, 19);
     buffer[1].val1 = reg[buffer[1].rs1];
-    func3 = getBits(buffer[0].inst,12,14);
+    func3 = getBits(buffer[0].inst, 12, 14);
     if (buffer[0].inst >> 31)
       buffer[1].imm = (1 << 21) - 1;
     buffer[1].imm <<= 6;
-    buffer[1].imm += getBits(buffer[0].inst, 25,30);
+    buffer[1].imm += getBits(buffer[0].inst, 25, 30);
     buffer[1].imm <<= 5;
     buffer[1].imm += getBits(buffer[0].inst, 7, 11);
     switch (func3) {
@@ -229,9 +222,9 @@ void Simulator::Id() {
     }
     buffer[1].imm += getBits(buffer[0].inst, 7, 7);
     buffer[1].imm <<= 6;
-    buffer[1].imm += getBits(buffer[0].inst,25,30);
+    buffer[1].imm += getBits(buffer[0].inst, 25, 30);
     buffer[1].imm <<= 4;
-    buffer[1].imm += getBits(buffer[0].inst,8,11);
+    buffer[1].imm += getBits(buffer[0].inst, 8, 11);
     buffer[1].imm <<= 1;
     ifjump = true;
     switch (func3) {
@@ -260,8 +253,8 @@ void Simulator::Id() {
     if (opcode == 23)
       buffer[1].type = AUIPC;
 
-    buffer[1].rd = getBits(buffer[0].inst,7,11);
-    buffer[1].imm = getBits(buffer[0].inst,12,31);
+    buffer[1].rd = getBits(buffer[0].inst, 7, 11);
+    buffer[1].imm = getBits(buffer[0].inst, 12, 31);
     buffer[1].imm <<= 12;
     break;
   case 111: // J
@@ -278,7 +271,7 @@ void Simulator::Id() {
     buffer[1].imm <<= 1;
     buffer[1].type = JAL;
     ifjump = true;
-//    // std::cerr << buffer[1].imm << std::endl;
+    //    // std::cerr << buffer[1].imm << std::endl;
     break;
   default:
     func3 = (buffer[0].inst >> 12) & 7;
@@ -301,7 +294,7 @@ void Simulator::Id() {
       if (func3 == 7)
         buffer[1].type = ANDI;
       buffer[1].rs1 = getBits(buffer[0].inst, 15, 19);
-//      // std::cerr << tmp << std::endl;
+      //      // std::cerr << tmp << std::endl;
       buffer[1].val1 = reg[buffer[1].rs1];
 
       buffer[1].rd = getBits(buffer[0].inst, 7, 11);
@@ -316,7 +309,7 @@ void Simulator::Id() {
       buffer[1].type = SLLI;
     default: // R
       if (func3 == 5) {
-        int tmp = getBits(buffer[0].inst,30,30);
+        int tmp = getBits(buffer[0].inst, 30, 30);
         if (!tmp)
           buffer[1].type = SRLI;
         else
@@ -328,22 +321,31 @@ void Simulator::Id() {
       buffer[1].rd = (buffer[0].inst >> 7) & 31;
     }
   }
-  if(stack[buffer[1].rs1] || stack[buffer[1].rs2]){
-    pc -= 4;
+  if (stack[buffer[1].rs1] || stack[buffer[1].rs2]) {
+    pc = buffer[1].line;
     buffer[1].type = NOP;
-    ifjump = false;
+    if (ifjump)
+      ifjump = false;
+  } else {
+    if (buffer[1].rd)
+      stack[buffer[1].rd] = true;
   }
-  else{
-    stack[buffer[1].rd] = true;
+  if (ifjump) {
+    int bit = getBits(pc, 3, 6);
+    if (counter[bit].ifjump())
+      pc = counter[bit].jump;
   }
-//    std::cout << str[buffer[1].type] << std::endl;
-//    std::cout << "imm:" << (int32_t)buffer[1].imm << '\t' <<
-//  "rs1: " << (int32_t)buffer[1].val1 << '\t' <<
-//  "rs2: " << (int32_t)buffer[1].val2 << '\t' <<
-//  "rd :" << buffer[1].rd << std::endl;
+  ifjump = false;
+
+  //    std::cout << str[buffer[1].type] << std::endl;
+  //    std::cout << "imm:" << (int32_t)buffer[1].imm << '\t' <<
+  //  "rs1: " << (int32_t)buffer[1].val1 << '\t' <<
+  //  "rs2: " << (int32_t)buffer[1].val2 << '\t' <<
+  //  "rd :" << buffer[1].rd << std::endl;
 }
 void Simulator::Exe() {
   buffer[2] = buffer[1];
+  int tmp;
   switch (buffer[1].type) {
   case NOP:
     break;
@@ -367,15 +369,18 @@ void Simulator::Exe() {
     break;
   case SLLI:
     buffer[2].exeRes = buffer[1].val1 << ((uint32_t)buffer[1].imm & 31u);
-//    // std::cerr << std::hex << buffer[1].val1 << ' ' << buffer[1].val2 << std::endl;
-//    // std::cerr << std::hex <<  buffer[2].exeRes << std::endl;
+    //    // std::cerr << std::hex << buffer[1].val1 << ' ' << buffer[1].val2 <<
+    //    std::endl;
+    //    // std::cerr << std::hex <<  buffer[2].exeRes << std::endl;
     break;
   case SRLI:
-    buffer[2].exeRes = (uint32_t)buffer[1].val1 >> ((uint32_t)buffer[1].imm & 31u);
+    buffer[2].exeRes =
+        (uint32_t)buffer[1].val1 >> ((uint32_t)buffer[1].imm & 31u);
     break;
   case SRAI:
     buffer[2].exeRes = (buffer[1].val1) >> ((uint32_t)buffer[1].imm & 31u);
-//    // std::cout << "****" << ((uint32_t)buffer[1].val2 & 31u) << std::endl;
+    //    // std::cout << "****" << ((uint32_t)buffer[1].val2 & 31u) <<
+    //    std::endl;
     break;
   case ADD:
     buffer[2].exeRes = buffer[1].val1 + buffer[1].val2;
@@ -393,7 +398,8 @@ void Simulator::Exe() {
     buffer[2].exeRes = buffer[1].val1 << (buffer[1].val2 & 31);
     break;
   case SRL:
-    buffer[2].exeRes = (uint32_t)buffer[1].val1 >> (uint32_t)(buffer[1].val2 & 31);
+    buffer[2].exeRes =
+        (uint32_t)buffer[1].val1 >> (uint32_t)(buffer[1].val2 & 31);
     break;
   case SRA:
     buffer[2].exeRes = (buffer[1].val1) >> (buffer[1].val2 & 31);
@@ -408,23 +414,43 @@ void Simulator::Exe() {
     buffer[2].exeRes = buffer[1].val1 & buffer[1].val2;
     break;
   case JAL:
-    buffer[2].exeRes = pc;
-    pc += buffer[1].imm - 4;
-//    ifjump = false;
-//    ifjump = true;
+    buffer[2].exeRes = buffer[1].line + 4;
+    //    std::cout << "JALjump:" << buffer[2].exeRes << std::endl;
+    tmp = buffer[1].imm + buffer[1].line;
+    if (tmp == buffer[0].line) {
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+    } else {
+      buffer[0].type = NOP;
+      buffer[0].inst = 0;
+      pc = buffer[1].imm + buffer[1].line;
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+      counter[getBits(buffer[1].line, 3, 6)].jump = tmp;
+    }
+
+    //    ifjump = false;
+    //    ifjump = true;
     break;
   case JALR:
-    buffer[2].exeRes = pc;
-    pc = (buffer[1].imm + buffer[1].val1) & (-2);
-//    ifjump = false;
-//    ifjump = true;
+    buffer[2].exeRes = buffer[1].line + 4;
+    tmp = (buffer[1].imm + buffer[1].val1) & (-2);
+    //    std::cout << "JALRjump:" << buffer[2].exeRes << std::endl;
+    if (tmp == buffer[0].line) {
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+    } else {
+      buffer[0].type = NOP;
+      buffer[0].inst = 0;
+      pc = tmp;
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+      counter[getBits(buffer[1].line, 3, 6)].jump = tmp;
+    }
+    //    ifjump = false;
+    //    ifjump = true;
     break;
   case LUI:
     buffer[2].exeRes = buffer[1].imm;
-    // std::cerr << "res: " << buffer[2].exeRes << std:: endl;
     break;
   case LB:
-    buffer[2].exeRes =  buffer[2].val1 + (std::int32_t)buffer[2].imm;
+    buffer[2].exeRes = buffer[2].val1 + (std::int32_t)buffer[2].imm;
     assert(buffer[2].exeRes && buffer[2].exeRes < 0x20000);
     break;
   case LH:
@@ -432,96 +458,142 @@ void Simulator::Exe() {
     assert(buffer[2].exeRes && buffer[2].exeRes < 0x20000);
     break;
   case LW:
-    buffer[2].exeRes = (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
+    buffer[2].exeRes =
+        (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
     assert(buffer[2].exeRes && buffer[2].exeRes < 0x20000);
     break;
   case LBU:
-    buffer[2].exeRes = (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
-    assert(buffer[2].exeRes &&  buffer[2].exeRes < 0x20000);
+    buffer[2].exeRes =
+        (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
+    assert(buffer[2].exeRes && buffer[2].exeRes < 0x20000);
     break;
   case LHU:
-    buffer[2].exeRes = (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
+    buffer[2].exeRes =
+        (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
     assert(buffer[2].exeRes && buffer[2].exeRes < 0x20000);
     break;
   case SB:
-    buffer[2].exeRes = (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
+    buffer[2].exeRes =
+        (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
     assert(buffer[2].exeRes && buffer[2].exeRes < 0x20000);
     break;
   case SH:
-    buffer[2].exeRes =  (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
+    buffer[2].exeRes =
+        (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
     assert(buffer[2].exeRes && buffer[2].exeRes < 0x20000);
     break;
   case SW:
-    buffer[2].exeRes = (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
+    buffer[2].exeRes =
+        (std::int32_t)buffer[2].val1 + (std::int32_t)buffer[2].imm;
     assert(buffer[2].exeRes && buffer[2].exeRes < 0x20000);
     break;
   case BEQ:
-    if(buffer[1].val1 == buffer[1].val2){
-      pc += buffer[1].imm - 4;
+    if (buffer[1].val1 == buffer[1].val2) {
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+      tmp = buffer[1].imm + buffer[1].line;
+      counter[getBits(buffer[1].line, 3, 6)].updateLine(tmp);
+    } else {
+      counter[getBits(buffer[1].line, 3, 6)].update(0);
+      tmp = buffer[1].line + 4;
     }
-//    ifjump = false;
+    if (tmp != buffer[0].line) {
+      buffer[0].inst = 0;
+      buffer[0].type = NOP;
+      pc = tmp;
+    }
+    //    ifjump = false;
     break;
   case BNE:
-    if(buffer[1].val1 != buffer[1].val2){
-      pc += buffer[1].imm - 4;
+    if (buffer[1].val1 != buffer[1].val2) {
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+      tmp = buffer[1].imm + buffer[1].line;
+      counter[getBits(buffer[1].line, 3, 6)].updateLine(tmp);
+    } else {
+      counter[getBits(buffer[1].line, 3, 6)].update(0);
+      tmp = buffer[1].line + 4;
     }
-//    ifjump = false;
+    if (tmp != buffer[0].line) {
+      buffer[0].inst = 0;
+      buffer[0].type = NOP;
+      pc = tmp;
+    }
+    //    ifjump = false;
     break;
   case BLT:
-    if(buffer[1].val1 < buffer[1].val2){
-      pc += buffer[1].imm - 4;
+    if (buffer[1].val1 < buffer[1].val2) {
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+      tmp = buffer[1].imm + buffer[1].line;
+      counter[getBits(buffer[1].line, 3, 6)].updateLine(tmp);
+    } else {
+      counter[getBits(buffer[1].line, 3, 6)].update(0);
+      tmp = buffer[1].line + 4;
     }
-//    ifjump = false;
+    if (tmp != buffer[0].line) {
+      buffer[0].inst = 0;
+      buffer[0].type = NOP;
+      pc = tmp;
+    }
+    //    ifjump = false;
     break;
   case BLTU:
-    if((uint32_t)buffer[1].val1 < (uint32_t)buffer[1].val2){
-      pc += buffer[1].imm - 4;
+    if ((uint32_t)buffer[1].val1 < (uint32_t)buffer[1].val2) {
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+      tmp = buffer[1].imm + buffer[1].line;
+      counter[getBits(buffer[1].line, 3, 6)].updateLine(tmp);
+    } else {
+      counter[getBits(buffer[1].line, 3, 6)].update(0);
+      tmp = buffer[1].line + 4;
     }
-//    ifjump = false;
+    if (tmp != buffer[0].line) {
+      buffer[0].inst = 0;
+      buffer[0].type = NOP;
+      pc = tmp;
+    }
+    //    ifjump = false;
     break;
   case BGE:
-    if(buffer[1].val1 >= buffer[1].val2){
-      pc += buffer[1].imm - 4;
+    if (buffer[1].val1 >= buffer[1].val2) {
+      counter[getBits(buffer[1].line, 3, 6)].update(1);
+      tmp = buffer[1].imm + buffer[1].line;
+      counter[getBits(buffer[1].line, 3, 6)].updateLine(tmp);
+    } else {
+      counter[getBits(buffer[1].line, 3, 6)].update(0);
+      tmp = buffer[1].line + 4;
     }
-//    ifjump = false;
-    break;
-  case BGEU:
-    if((uint32_t)buffer[1].val1 >= (uint32_t)buffer[1].val2){
-      pc += buffer[1].imm - 4;
+    if (tmp != buffer[0].line) {
+      buffer[0].inst = 0;
+      buffer[0].type = NOP;
+      pc = tmp;
     }
-//    ifjump = false;
+    //    ifjump = false;
     break;
 
   case AUIPC:
-    buffer[2].exeRes = pc + buffer[1].imm - 4;
-//    ifjump = false;
+    buffer[2].exeRes = buffer[1].line + buffer[1].imm;
     break;
   default:
     break;
-
   }
-//  // // std::cout << "imm2:" << buffer[2].imm << std::endl;
+  //  // // std::cout << "imm2:" << buffer[2].imm << std::endl;
 }
 void Simulator::Mem() {
   buffer[3] = buffer[2];
-  if(buffer[2].type == LB || buffer[2].type == LH ||
-  buffer[2].type == LW || buffer[2].type == LBU ||
-      buffer[2].type == LHU || buffer[2].type ==  SB ||
-      buffer[2].type == SH || buffer[2].type == SW){
-    cnt ++;
-    if(cnt % 3){
+  if (buffer[2].type == LB || buffer[2].type == LH || buffer[2].type == LW ||
+      buffer[2].type == LBU || buffer[2].type == LHU || buffer[2].type == SB ||
+      buffer[2].type == SH || buffer[2].type == SW) {
+    cnt++;
+    if (cnt % 3) {
       ifmem = true;
       return;
-    }
-    else {
+    } else {
       ifmem = false;
     }
   }
-  switch (buffer[2].type){
+  switch (buffer[2].type) {
   case NOP:
     break;
   case LB:
-      buffer[3].exeRes = *(int8_t *)(memory + buffer[2].exeRes);
+    buffer[3].exeRes = *(int8_t *)(memory + buffer[2].exeRes);
     break;
   case LH:
     buffer[3].exeRes = *(int16_t *)(memory + buffer[2].exeRes);
@@ -535,17 +607,17 @@ void Simulator::Mem() {
   case LHU:
     buffer[3].exeRes = *(uint16_t *)(memory + buffer[2].exeRes);
     break;
-  case SB:{
-      char tmp = buffer[2].val2;
-      memcpy(memory + buffer[2].exeRes, &tmp, 1);
+  case SB: {
+    char tmp = buffer[2].val2;
+    memcpy(memory + buffer[2].exeRes, &tmp, 1);
     break;
   }
-  case SH:{
-      short tmp = buffer[2].val2;
-      memcpy(memory + buffer[2].exeRes, &tmp, 2);
+  case SH: {
+    short tmp = buffer[2].val2;
+    memcpy(memory + buffer[2].exeRes, &tmp, 2);
     break;
   }
-  case SW:{
+  case SW: {
     memcpy(memory + buffer[2].exeRes, &buffer[2].val2, 4);
     break;
   }
@@ -554,14 +626,13 @@ void Simulator::Mem() {
   }
 }
 void Simulator::Wb() {
-  switch (buffer[3].type){
+  switch (buffer[3].type) {
   case BEQ:
   case BNE:
   case BLT:
   case BGE:
   case BLTU:
   case BGEU:
-    ifjump = false;
     break;
   case NOP:
   case SB:
@@ -570,11 +641,10 @@ void Simulator::Wb() {
     break;
   case JAL:
   case JALR:
-    ifjump = false;
   default:
-    reg[buffer[3].rd] = buffer[3].exeRes;
-    stack[buffer[3].rd] = false;
+    if (buffer[3].rd) {
+      reg[buffer[3].rd] = buffer[3].exeRes;
+      stack[buffer[3].rd] = false;
+    }
   }
-  buffer[3].type = NOP;
-
 }
